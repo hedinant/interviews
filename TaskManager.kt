@@ -29,9 +29,11 @@ class TaskManager(
             running.add(task)
             task.status = TaskStatus.Working
             taskScope.launch { task.runTask(remoteHistory) }
+            // повторяется, стоит куда-то вынести
             uploadHistory(
                 TaskHistoryRecord(
                     platform = "android",
+                    // вынести в отдельный класс
                     record = "task " + task.name + " " + task.schedule + " " +
                             " started " + System.currentTimeMillis()
                 )
@@ -39,6 +41,7 @@ class TaskManager(
         } else {
             blocked.add(task)
             task.status = TaskStatus.Blocked
+            // повторяется
             uploadHistory(
                 TaskHistoryRecord(
                     platform = "android",
@@ -51,6 +54,7 @@ class TaskManager(
 
     fun taskFinished(task: Task) {
         running.remove(task)
+        // повторяется
         uploadHistory(
             TaskHistoryRecord(
                 platform = "android",
@@ -70,6 +74,7 @@ class TaskManager(
     fun skeduleTask(task: Task) {
         for (i in 0 until queue.size) {
             if (task.schedule < queue[i].schedule) {
+                // в нвчало очереди
                 queue.add(i, task)
                 return
             }
@@ -77,12 +82,16 @@ class TaskManager(
     }
 
     fun isRunning(name: String): Boolean {
+        // для сравнения ==
         return running.any { task -> task.name === name }
     }
 
     private fun launchChecker() {
         taskScope.launch() {
+            // заменить scope
             while (true) {
+                // возможен краш
+                // isEmpty() можно для проверки юзать
                 while (queue[0].schedule <= System.currentTimeMillis()) {
                     runTask(queue.removeFirst())
                 }
