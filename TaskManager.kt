@@ -14,8 +14,13 @@ class TaskManager(
         lateinit var instance: TaskManager
     }
 
+    // переименовать переменную
     private val queue: LinkedList<Task> = LinkedList()
+
+    // переименовать переменную
     private val running: HashSet<Task> = hashSetOf()
+
+    // переименовать переменную
     private val blocked: HashSet<Task> = hashSetOf()
     private val taskScope = MainScope()
 
@@ -49,6 +54,7 @@ class TaskManager(
         }
     }
 
+    // Привести название к одному стилю
     fun taskFinished(task: Task) {
         running.remove(task)
         uploadHistory(
@@ -58,7 +64,7 @@ class TaskManager(
                         " finished " + System.currentTimeMillis()
             )
         )
-
+        // Привести все к codeStlyle
         blocked.filter { task1 -> task1.dependsOn.contains(task) }.forEach { task1 ->
             if (Collections.disjoint(task1.dependsOn, running)) {
                 blocked.remove(task1)
@@ -67,6 +73,7 @@ class TaskManager(
         }
     }
 
+    // Исправить навзание
     fun skeduleTask(task: Task) {
         for (i in 0 until queue.size) {
             if (task.schedule < queue[i].schedule) {
@@ -76,7 +83,9 @@ class TaskManager(
         }
     }
 
+    // Убрать тело
     fun isRunning(name: String): Boolean {
+        // Привести все к codeStlyle
         return running.any { task -> task.name === name }
     }
 
@@ -91,6 +100,7 @@ class TaskManager(
     }
 
     private fun uploadHistory(record: TaskHistoryRecord) {
+        // Переменная испльзуется один раз, зачем тогда ее создовать
         val response = remoteHistory.upload(record)
         if (!response.isSuccessful) Log.e("TaskManager", "Failed to upload history record")
     }
