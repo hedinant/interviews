@@ -1,6 +1,6 @@
 package interview
 
-class TaskHistoryRecord(
-    var platform: String,
-    var record: String
+class TaskHistoryRecord( // нужен data class
+    var platform: String,// val
+    var record: String // val
 )

@@ -5,7 +5,7 @@ abstract class Task(
 ) {
     var status: TaskStatus = TaskStatus.NotStarted
     var schedule: Long = 0
-    var dependsOn: Set<Task> = emptySet()
+    var dependsOn: Set<Task> = emptySet() // зачем Set
 
     abstract fun runTask(remoteHistory: RemoteHistoryService)
 
@@ -21,7 +21,8 @@ abstract class Task(
     }
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
+        // нужна проверка на null
+        if (this === other) return true // почему ===?
         if (other !is Task) return false
 
         return schedule == other.schedule && name == other.name

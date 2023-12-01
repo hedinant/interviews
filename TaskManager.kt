@@ -11,29 +11,29 @@ class TaskManager(
     private val remoteHistory: RemoteHistoryService
 ) {
     companion object {
-        lateinit var instance: TaskManager
+        lateinit var instance: TaskManager // убрать lateinit и при заверешнии присваивать null
     }
 
     private val queue: LinkedList<Task> = LinkedList()
     private val running: HashSet<Task> = hashSetOf()
     private val blocked: HashSet<Task> = hashSetOf()
-    private val taskScope = MainScope()
+    private val taskScope = MainScope() // что за скоуп?
 
     init {
         instance = this
         launchChecker()
     }
 
-    fun runTask(task: Task) {
+    fun runTask(task: Task) { // сделать приватным
         if (Collections.disjoint(task.dependsOn, running)) {
             running.add(task)
             task.status = TaskStatus.Working
             taskScope.launch { task.runTask(remoteHistory) }
             uploadHistory(
                 TaskHistoryRecord(
-                    platform = "android",
-                    record = "task " + task.name + " " + task.schedule + " " +
-                            " started " + System.currentTimeMillis()
+                    platform = "android",//вынести в отдельную переменную
+                    record = "task " + task.name + " " + task.schedule + " " +//вынести в отдельную переменную
+                            " started " + System.currentTimeMillis()//вынести в отдельную переменную
                 )
             )
         } else {
@@ -67,8 +67,8 @@ class TaskManager(
         }
     }
 
-    fun skeduleTask(task: Task) {
-        for (i in 0 until queue.size) {
+    fun skeduleTask(task: Task) { // опечатка
+        for (i in 0 until queue.size) { // упрастить
             if (task.schedule < queue[i].schedule) {
                 queue.add(i, task)
                 return
@@ -77,14 +77,14 @@ class TaskManager(
     }
 
     fun isRunning(name: String): Boolean {
-        return running.any { task -> task.name === name }
+        return running.any { task -> task.name === name } // почему ===?
     }
 
     private fun launchChecker() {
         taskScope.launch() {
-            while (true) {
+            while (true) { // бесконечный цикл
                 while (queue[0].schedule <= System.currentTimeMillis()) {
-                    runTask(queue.removeFirst())
+                    runTask(queue.removeFirst()) // removeFirst()? переименовать
                 }
             }
         }
