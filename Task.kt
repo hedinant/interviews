@@ -1,5 +1,5 @@
 package interview
-
+// abstract где реализуется
 abstract class Task(
     val name: String
 ) {

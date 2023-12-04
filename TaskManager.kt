@@ -11,13 +11,13 @@ class TaskManager(
     private val remoteHistory: RemoteHistoryService
 ) {
     companion object {
-        lateinit var instance: TaskManager
+        lateinit var instance: TaskManager  // возможно лучше сделать без lateinit
     }
 
-    private val queue: LinkedList<Task> = LinkedList()
+    private val queue: LinkedList<Task> = LinkedList()  // если очередь то queue
     private val running: HashSet<Task> = hashSetOf()
     private val blocked: HashSet<Task> = hashSetOf()
-    private val taskScope = MainScope()
+    private val taskScope = MainScope()  // передавать в конструктор и возможно тут лучше подойдёт default
 
     init {
         instance = this
@@ -29,11 +29,11 @@ class TaskManager(
             running.add(task)
             task.status = TaskStatus.Working
             taskScope.launch { task.runTask(remoteHistory) }
-            uploadHistory(
+            uploadHistory( // повторяется дважды в коде
                 TaskHistoryRecord(
-                    platform = "android",
-                    record = "task " + task.name + " " + task.schedule + " " +
-                            " started " + System.currentTimeMillis()
+                    platform = "android", // вынести константы
+                    record = "task " + task.name + " " + task.schedule + " " +// вынести константы
+                            " started " + System.currentTimeMillis()// вынести константы
                 )
             )
         } else {
@@ -59,6 +59,7 @@ class TaskManager(
             )
         )
 
+        // task1 возможно имя говорящее поставить
         blocked.filter { task1 -> task1.dependsOn.contains(task) }.forEach { task1 ->
             if (Collections.disjoint(task1.dependsOn, running)) {
                 blocked.remove(task1)
@@ -67,6 +68,7 @@ class TaskManager(
         }
     }
 
+    // исправить опечатку
     fun skeduleTask(task: Task) {
         for (i in 0 until queue.size) {
             if (task.schedule < queue[i].schedule) {
@@ -77,12 +79,13 @@ class TaskManager(
     }
 
     fun isRunning(name: String): Boolean {
-        return running.any { task -> task.name === name }
+        return running.any { task -> task.name === name }  // не стоит сравнивать по ссылке неоднозначно будет
     }
 
     private fun launchChecker() {
         taskScope.launch() {
-            while (true) {
+            while (true) { // возможно не лучший вариант добавить в цикл delay(1)
+                // нужна проверка если queue[0] нету
                 while (queue[0].schedule <= System.currentTimeMillis()) {
                     runTask(queue.removeFirst())
                 }
