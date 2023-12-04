@@ -20,6 +20,8 @@ abstract class Task(
         TaskManager.instance.skeduleTask(this)
     }
 
+    // определить эквивалентоность корректно, проверка isRunning требует только имя
+    // а еще очередь может заэффектить
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Task) return false
@@ -29,6 +31,7 @@ abstract class Task(
 
     override fun hashCode(): Int {
         var result = name.hashCode()
+        // убрать в константы
         result = 31 * result + status.hashCode()
         result = 31 * result + (schedule xor (schedule shr 32)).toInt()
         return result
