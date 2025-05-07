@@ -5,6 +5,11 @@ import { Button } from "./Button";
 
 import { Api } from "../utils/Api";
 
+type KeyType = {
+  id: string;
+  value: string;
+};
+
 /*
   Легенда:
   Необходимо отобразить список ключей (произвольные строки), запрашиваемый с бэкенда.
@@ -16,11 +21,11 @@ import { Api } from "../utils/Api";
  */
 
 export const App = () => {
-  const [keys, setKeys] = useState(null);
-  const [isKeysRequested, setIsKeysRequested] = useState(false);
+  const [keys, setKeys] = useState<any>(null);
+  const [isKeysRequested, setIsKeysRequested] = useState<boolean>(false);
 
-  const [isLoading, setLoadingState] = useState(false);
-  const [countUsedKeys, setCountUsedKeys] = useState(0);
+  const [isLoading, setLoadingState] = useState<boolean>(false);
+  const [countUsedKeys, setCountUsedKeys] = useState<number>(0);
 
   const toggleLoading = useCallback(() => {
     setLoadingState(!isLoading);
@@ -38,13 +43,13 @@ export const App = () => {
     toggleLoading();
 
     const key = await Api.generateKey();
-    setKeys((prevKeys) => prevKeys.push(key));
+    setKeys((prevKeys: KeyType[]) => prevKeys.push(key));
 
     toggleLoading();
   }, [toggleLoading]);
 
-  const removeKey = useCallback((value) => {
-    setKeys((prevKeys) => prevKeys.filter((key) => key !== value));
+  const removeKey = useCallback((value: string) => {
+    setKeys((prevKeys: KeyType[]) => prevKeys.filter((key) => key.value !== value));
   }, []);
 
   if (!isKeysRequested) {
@@ -56,7 +61,7 @@ export const App = () => {
           setKeys(response);
         })
       }, 30000);
-    }).catch(e => {
+    }).catch((e: unknown) => {
       setIsKeysRequested(false);
     })
   }
@@ -68,14 +73,14 @@ export const App = () => {
         <h3>Использовано текущих ключей: {countUsedKeys}</h3>
       </div>
 
-      {!keys.length && <div>Список ключей пуст</div>}
+      {!keys?.length && <div>Список ключей пуст</div>}
 
-      {keys.length && (
+      {keys && keys.length > 0 && (
         <div className="keys">
-          {keys.map((key) => (
+          {keys.map((key: KeyType) => (
             <Key
-              value={key}
-              removeKey={removeKey(key)}
+              value={key.value}
+              removeKey={removeKey(key.value)}
               decrementUsedKeys={decrementUsedKeys}
               incrementUsedKeys={incrementUsedKeys}
             />
@@ -87,7 +92,6 @@ export const App = () => {
         <Button
           onClick={addKey}
           isLoading={isLoading}
-          label="Сгенерировать ключ"
         />
       </div>
     </main>

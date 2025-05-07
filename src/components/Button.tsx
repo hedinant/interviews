@@ -1,7 +1,16 @@
 import cn from "classnames";
 import { useMemo } from "react";
 
-export const Button = ({
+interface ButtonProps {
+  label: string;
+  size?: string;
+  color?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  isLoading?: boolean;
+}
+
+export const Button: FC<ButtonProps> = ({
   size,
   label,
   color,

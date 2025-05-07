@@ -1,28 +1,35 @@
-import { useCallback, useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react"; // FC не импортирован
 import { Api } from "../utils/Api";
 import { Button } from "./Button";
 
 import cn from "classnames";
 
-export const Key = ({
+interface KeyProps {
+  value: string;
+  removeKey: () => void;
+  incrementUsedKeys: () => void;
+  decrementUsedKeys: () => void;
+}
+
+export const Key: FC<KeyProps> = ({
   value,
   removeKey,
   incrementUsedKeys,
   decrementUsedKeys,
 }) => {
-  const [isUsed, setUsedState] = useState(false);
-  const [isLoading, setLoadingState] = useState(false);
+  const [isUsed, setUsedState] = useState<boolean>(false);
+  const [isLoading, setLoadingState] = useState<boolean>(false);
 
   const toggleLoading = useCallback(() => {
     setLoadingState(!isLoading);
   }, [isLoading]);
 
   const applyKey = useCallback(
-    async (value) => {
+    async (keyValue: string) => {
       if (isUsed) return;
 
       toggleLoading();
-      await Api.addUsedKey(value);
+      await Api.addUsedKey(keyValue);
       toggleLoading();
 
       setUsedState(true);
