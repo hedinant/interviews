@@ -73,9 +73,9 @@ export const App = () => {
         <h3>Использовано текущих ключей: {countUsedKeys}</h3>
       </div>
 
-      {!keys?.length && <div>Список ключей пуст</div>}
+      {!keys.length && <div>Список ключей пуст</div>}
 
-      {keys && keys.length > 0 && (
+      {keys.length > 0 && (
         <div className="keys">
           {keys.map((key: KeyType) => (
             <Key
