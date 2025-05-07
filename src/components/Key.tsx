@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useMemo } from "react"; // FC не импортирован
+import { useCallback, useState, useEffect, useMemo } from "react";
 import { Api } from "../utils/Api";
 import { Button } from "./Button";
 
