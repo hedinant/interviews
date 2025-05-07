@@ -75,7 +75,7 @@ export const App = () => {
 
       {!keys.length && <div>Список ключей пуст</div>}
 
-      {keys.length > 0 && (
+      {keys.length && (
         <div className="keys">
           {keys.map((key: KeyType) => (
             <Key
