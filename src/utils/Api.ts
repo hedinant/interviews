@@ -1,5 +1,5 @@
 const generateString = () => Math.random().toString(36).slice(2);
-const sleep = (delay = 0) => new Promise((res) => setTimeout(res, delay));
+const sleep = async (delay = 0, callback) => setTimeout(callback, delay);
 
 export class Api {
   static async loadKeys() {
