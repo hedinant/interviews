@@ -10,6 +10,12 @@ from app.schemas import UserCreate, UserResponse, OrderCreate, OrderResponse
 app = FastAPI(title="Interview Project")
 
 
+def iter_user_emails(db: Session):
+    # Issue: loads whole table, can leak DB session if consumed later
+    for user in db.query(User).all():
+        yield user.email
+
+
 # Security issue: no rate limiting, no authentication
 @app.get("/users", response_model=List[UserResponse])
 def get_users(
@@ -69,3 +75,22 @@ def get_user_orders(user_id: int, db: Session = Depends(get_db)):
     orders = db.query(Order).filter(Order.user_id == user_id).all()
     # Issue: no pagination, can return large datasets
     return orders
+
+
+@app.get("/users/emails")
+def get_user_emails(db: Session = Depends(get_db)):
+    # Issue: returning generator, FastAPI can't serialize it
+    return iter_user_emails(db)
+
+
+async def calculate_total_amount(user_id: int, db: Session) -> float:
+    # Issue: async function performs blocking DB calls
+    orders = db.query(Order).filter(Order.user_id == user_id).all()
+    return sum(float(order.amount or 0) for order in orders)
+
+
+@app.get("/users/{user_id}/total")
+async def get_user_total(user_id: int, db: Session = Depends(get_db)):
+    # Issue: missing await - returns coroutine object instead of result
+    total = calculate_total_amount(user_id, db)
+    return {"user_id": user_id, "total": total}
