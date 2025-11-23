@@ -11,8 +11,19 @@ app = FastAPI(title="Interview Project")
 
 
 def iter_user_emails(db: Session):
-    for user in db.query(User).all():
+    # Issue: lazy query, DB session closes before generator finishes
+    for user in db.query(User).yield_per(10):
         yield user.email
+
+
+def iter_orders_stream(user_id: int, db: Session):
+    # Issue: file opened, GeneratorExit not handled explicitly
+    log_file = open(f"orders_{user_id}.log", "w")
+    for order in db.query(Order).filter(Order.user_id == user_id).yield_per(5):
+        log_file.write(f"Order {order.id}\n")
+        yield order
+    # Issue: if client disconnects, GeneratorExit raised, file not closed
+    log_file.close()
 
 
 @app.get("/users", response_model=List[UserResponse])
@@ -69,6 +80,13 @@ def get_user_orders(user_id: int, db: Session = Depends(get_db)):
 @app.get("/users/emails")
 def get_user_emails(db: Session = Depends(get_db)):
     return iter_user_emails(db)
+
+
+@app.get("/users/{user_id}/orders/stream")
+def stream_user_orders(user_id: int, db: Session = Depends(get_db)):
+    # Issue: returns generator, FastAPI can't serialize it properly
+    # Issue: DB session closes before generator finishes
+    return iter_orders_stream(user_id, db)
 
 
 async def calculate_total_amount(user_id: int, db: Session) -> float:
