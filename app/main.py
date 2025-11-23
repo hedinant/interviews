@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Set
 import os
 
 from app.database import get_db
@@ -8,6 +8,9 @@ from app.models import User, Order
 from app.schemas import UserCreate, UserResponse, OrderCreate, OrderResponse
 
 app = FastAPI(title="Interview Project")
+
+# Issue: global set, memory leak - connections never removed
+active_connections: Set[WebSocket] = set()
 
 
 def iter_user_emails(db: Session):
@@ -98,3 +101,29 @@ async def calculate_total_amount(user_id: int, db: Session) -> float:
 async def get_user_total(user_id: int, db: Session = Depends(get_db)):
     total = calculate_total_amount(user_id, db)
     return {"user_id": user_id, "total": total}
+
+
+@app.websocket("/ws/orders/{user_id}")
+# Issue: inconsistent API design - user_id from path, status from body
+async def websocket_orders(websocket: WebSocket, user_id: int):
+    await websocket.accept()
+    active_connections.add(websocket)
+    # Issue: no try/except for WebSocketDisconnect
+    # Issue: using sync DB session in async function
+    db = next(get_db())
+    while True:
+        data = await websocket.receive_text()
+        import json
+
+        # Issue: no validation of incoming data, no error handling for JSON parse
+        request_data = json.loads(
+            data
+        )  # Issue: can raise ValueError, no error handling
+        status_filter = request_data.get("status")
+        query = db.query(Order).filter(Order.user_id == user_id)
+        if status_filter:
+            query = query.filter(Order.status == status_filter)
+        orders = query.all()
+        # Issue: sending large dataset without pagination
+        await websocket.send_json([{"id": o.id, "amount": o.amount} for o in orders])
+    # Issue: websocket never removed from active_connections on disconnect
