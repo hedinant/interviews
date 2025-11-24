@@ -9,23 +9,19 @@ from app.schemas import UserCreate, UserResponse, OrderCreate, OrderResponse
 
 app = FastAPI(title="Interview Project")
 
-# Issue: global set, memory leak - connections never removed
 active_connections: Set[WebSocket] = set()
 
 
 def iter_user_emails(db: Session):
-    # Issue: lazy query, DB session closes before generator finishes
     for user in db.query(User).yield_per(10):
         yield user.email
 
 
 def iter_orders_stream(user_id: int, db: Session):
-    # Issue: file opened, GeneratorExit not handled explicitly
     log_file = open(f"orders_{user_id}.log", "w")
     for order in db.query(Order).filter(Order.user_id == user_id).yield_per(5):
         log_file.write(f"Order {order.id}\n")
         yield order
-    # Issue: if client disconnects, GeneratorExit raised, file not closed
     log_file.close()
 
 
@@ -87,8 +83,6 @@ def get_user_emails(db: Session = Depends(get_db)):
 
 @app.get("/users/{user_id}/orders/stream")
 def stream_user_orders(user_id: int, db: Session = Depends(get_db)):
-    # Issue: returns generator, FastAPI can't serialize it properly
-    # Issue: DB session closes before generator finishes
     return iter_orders_stream(user_id, db)
 
 
@@ -104,26 +98,18 @@ async def get_user_total(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.websocket("/ws/orders/{user_id}")
-# Issue: inconsistent API design - user_id from path, status from body
 async def websocket_orders(websocket: WebSocket, user_id: int):
     await websocket.accept()
     active_connections.add(websocket)
-    # Issue: no try/except for WebSocketDisconnect
-    # Issue: using sync DB session in async function
     db = next(get_db())
     while True:
         data = await websocket.receive_text()
         import json
 
-        # Issue: no validation of incoming data, no error handling for JSON parse
-        request_data = json.loads(
-            data
-        )  # Issue: can raise ValueError, no error handling
+        request_data = json.loads(data)
         status_filter = request_data.get("status")
         query = db.query(Order).filter(Order.user_id == user_id)
         if status_filter:
             query = query.filter(Order.status == status_filter)
         orders = query.all()
-        # Issue: sending large dataset without pagination
         await websocket.send_json([{"id": o.id, "amount": o.amount} for o in orders])
-    # Issue: websocket never removed from active_connections on disconnect
