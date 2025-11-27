@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Set
 import os
 
 from app.database import get_db
@@ -9,10 +9,20 @@ from app.schemas import UserCreate, UserResponse, OrderCreate, OrderResponse
 
 app = FastAPI(title="Interview Project")
 
+active_connections: Set[WebSocket] = set()
+
 
 def iter_user_emails(db: Session):
-    for user in db.query(User).all():
+    for user in db.query(User).yield_per(10):
         yield user.email
+
+
+def iter_orders_stream(user_id: int, db: Session):
+    log_file = open(f"orders_{user_id}.log", "w")
+    for order in db.query(Order).filter(Order.user_id == user_id).yield_per(5):
+        log_file.write(f"Order {order.id}\n")
+        yield order
+    log_file.close()
 
 
 @app.get("/users", response_model=List[UserResponse])
@@ -71,6 +81,11 @@ def get_user_emails(db: Session = Depends(get_db)):
     return iter_user_emails(db)
 
 
+@app.get("/users/{user_id}/orders/stream")
+def stream_user_orders(user_id: int, db: Session = Depends(get_db)):
+    return iter_orders_stream(user_id, db)
+
+
 async def calculate_total_amount(user_id: int, db: Session) -> float:
     orders = db.query(Order).filter(Order.user_id == user_id).all()
     return sum(float(order.amount or 0) for order in orders)
@@ -80,3 +95,21 @@ async def calculate_total_amount(user_id: int, db: Session) -> float:
 async def get_user_total(user_id: int, db: Session = Depends(get_db)):
     total = calculate_total_amount(user_id, db)
     return {"user_id": user_id, "total": total}
+
+
+@app.websocket("/ws/orders/{user_id}")
+async def websocket_orders(websocket: WebSocket, user_id: int):
+    await websocket.accept()
+    active_connections.add(websocket)
+    db = next(get_db())
+    while True:
+        data = await websocket.receive_text()
+        import json
+
+        request_data = json.loads(data)
+        status_filter = request_data.get("status")
+        query = db.query(Order).filter(Order.user_id == user_id)
+        if status_filter:
+            query = query.filter(Order.status == status_filter)
+        orders = query.all()
+        await websocket.send_json([{"id": o.id, "amount": o.amount} for o in orders])
