@@ -25,6 +25,7 @@ class Order(Base):
     amount = Column(Float)
     description = Column(Text)
     status = Column(String(50))
+    tags = Column(String(500))
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")
