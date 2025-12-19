@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -24,6 +24,7 @@ class OrderBase(BaseModel):
     amount: float
     description: Optional[str] = None
     status: str = "pending"
+    tags: Optional[List[str]] = None
 
 
 class OrderCreate(OrderBase):

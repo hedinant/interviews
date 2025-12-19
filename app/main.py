@@ -54,7 +54,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/orders", response_model=OrderResponse)
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
-    db_order = Order(**order.dict())
+    order_data = order.dict()
+    if order_data.get("tags"):
+        order_data["tags"] = ",".join(order_data["tags"])
+    db_order = Order(**order_data)
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
@@ -74,6 +77,13 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 def get_user_orders(user_id: int, db: Session = Depends(get_db)):
     orders = db.query(Order).filter(Order.user_id == user_id).all()
     return orders
+
+
+@app.get("/orders/by-tag/{tag}")
+def get_orders_by_tag(tag: str, db: Session = Depends(get_db)):
+    all_orders = db.query(Order).filter(Order.tags.isnot(None)).all()
+    matching_orders = [o for o in all_orders if tag in (o.tags or "")]
+    return matching_orders
 
 
 @app.get("/users/emails")
